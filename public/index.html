@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Block Editor</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div id="loading-indicator">Loading Assets...</div>
+
+  
+  <div id="index-display"> 
+    <div id="index-header">
+      <span id="index-title">Index:</span>
+      
+    </div>
+    <div id="index-content">
+      <span class="index-bracket">[</span>
+      <div id="index-values">
+        
+      </div>
+      <span class="index-bracket">]</span>
+    </div>
+  </div>
+  
+
+  <div id="container"></div> 
+  <div id="sidebar">
+      
+  </div>
+  <div id="context-menu"></div>
+  <div id="tooltip"></div> 
+
+  
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
