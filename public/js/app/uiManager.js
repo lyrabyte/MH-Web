@@ -85,48 +85,55 @@ export function setLoading(isLoading) {
 }
 
 function populateSidebar() {
-    if (!sidebar || !_blockRegistry) return; 
-
-    sidebar.innerHTML = ''; 
-    const header = document.createElement('div');
-    header.className = 'sidebar-header';
-    header.textContent = 'Blocks';
-    sidebar.appendChild(header);
-
     try {
-        _blockRegistry.getTypeNames().forEach(typeName => {
+        if (!_blockRegistry || !sidebar) return;
+
+        const typeNames = _blockRegistry.getTypeNames();
+        typeNames.forEach(typeName => {
             const sidebarElement = _blockRegistry.createSidebarElement(typeName);
             if (sidebarElement) {
                 const BlockClass = _blockRegistry.getBlockClass(typeName);
                 const label = BlockClass?.label || typeName;
-                sidebarElement.dataset.label = label; 
 
-                sidebarElement.addEventListener('pointerdown', (e) => {
+                sidebarElement.addEventListener('mousedown', (e) => {
                     if (_startSidebarDragCallback) {
-                        _startSidebarDragCallback(e, typeName); 
-                    } else {
-                        console.warn("UIManager: _startSidebarDragCallback not set.");
+                        _startSidebarDragCallback(e, typeName);
                     }
                 });
 
-                const img = sidebarElement.querySelector('img');
-                if (img) img.addEventListener('dragstart', (e) => e.preventDefault());
-
                 sidebarElement.addEventListener('mouseenter', (e) => {
-                    if (!tooltipElement) return;
-                    tooltipElement.textContent = label; 
-                    tooltipElement.style.display = 'block';
+                    if (tooltipElement) {
 
-                    const itemRect = sidebarElement.getBoundingClientRect();
-                    const tooltipRect = tooltipElement.getBoundingClientRect();
-                    let top = itemRect.top + (itemRect.height / 2) - (tooltipRect.height / 2);
-                    let left = itemRect.left - tooltipRect.width - 10; 
+                        const description = BlockClass?.description || '';
 
-                    top = Math.max(5, Math.min(top, window.innerHeight - tooltipRect.height - 5));
-                    left = Math.max(5, left); 
-                    tooltipElement.style.top = `${top}px`;
-                    tooltipElement.style.left = `${left}px`;
+                        tooltipElement.innerHTML = '';
+
+                        const titleElement = document.createElement('div');
+                        titleElement.className = 'tooltip-title';
+                        titleElement.textContent = label;
+                        tooltipElement.appendChild(titleElement);
+
+                        if (description) {
+                            const descElement = document.createElement('div');
+                            descElement.className = 'tooltip-description';
+                            descElement.textContent = description;
+                            tooltipElement.appendChild(descElement);
+                        }
+
+                        tooltipElement.style.display = 'block';
+
+                        const itemRect = sidebarElement.getBoundingClientRect();
+                        const tooltipRect = tooltipElement.getBoundingClientRect();
+                        let top = itemRect.top + (itemRect.height / 2) - (tooltipRect.height / 2);
+                        let left = itemRect.left - tooltipRect.width - 10; 
+
+                        top = Math.max(5, Math.min(top, window.innerHeight - tooltipRect.height - 5));
+                        left = Math.max(5, left); 
+                        tooltipElement.style.top = `${top}px`;
+                        tooltipElement.style.left = `${left}px`;
+                    }
                 });
+
                 sidebarElement.addEventListener('mouseleave', (e) => {
                     if (tooltipElement) tooltipElement.style.display = 'none';
                 });

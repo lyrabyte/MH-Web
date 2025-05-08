@@ -6,7 +6,7 @@ export class Director {
     static fallbackColor = 0x88c0d0; 
     static label = 'Director';
     static texturePath = '/textures/piston.png'; 
-
+    static description = 'Changes direction to the direction this block is facing';
     static dirs = [
       { name: 'Up',    vec: new THREE.Vector3(0, 1, 0),  icon: '↑', rotation: 0 },
       { name: 'Right', vec: new THREE.Vector3(1, 0, 0),  icon: '→', rotation: -Math.PI / 2 },
@@ -142,7 +142,25 @@ export class Director {
 
         const deleteItem = document.createElement('div');
         deleteItem.className = 'menu-item delete-item'; 
-        deleteItem.innerHTML = `<span class="icon" style="color: var(--nord11);">🗑️</span> Delete Block`; 
+        deleteItem.innerHTML = `
+  <span class="icon" style="color: var(--nord11);">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 24 24"
+         width="16" height="16"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6"/>
+      <line x1="10" y1="11" x2="10" y2="17"/>
+      <line x1="14" y1="11" x2="14" y2="17"/>
+      <path d="M9 6V4h6v2"/>
+    </svg>
+  </span>
+  Delete Block
+`; 
         deleteItem.addEventListener('click', () => {
 
             menuElement.dispatchEvent(new CustomEvent('deleteblock', {
@@ -154,18 +172,6 @@ export class Director {
         menuElement.appendChild(deleteItem);
     }
 
-    /**
-     * Called by the Cursor's step() method when the cursor is on this block.
-     * Determines the next action for the cursor.
-     *
-     * @param {THREE.Group} blockInstance - The specific instance of this block.
-     * @param {{x: number, y: number}} currentGridPos - The grid center coords the cursor is currently at.
-     * @param {{x: number, y: number} | null} previousGridPos - The grid center coords the cursor came from (null on first step).
-     * @param {Map<string, THREE.Group>} blockGridMap - The map of all placed blocks.
-     * @param {BlockRegistry} blockRegistry - The registry for block classes.
-     * @param {Cursor} cursor - The cursor instance itself (for accessing index array, etc.).
-     * @returns {{action: string, nextGridPos?: {x: number, y: number}, pauseDuration?: number}} - The action for the cursor.
-     */
     static onCursorStep(blockInstance, currentGridPos, previousGridPos, blockGridMap, blockRegistry, cursor) {
         const blockData = blockInstance.userData;
         const currentGridKey = `${Math.round(currentGridPos.x - 0.5)},${Math.round(currentGridPos.y - 0.5)}`;

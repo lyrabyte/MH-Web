@@ -32,6 +32,10 @@ export async function initializeBlockManager() {
         AllBlockClasses.forEach(BlockClass => {
             if (BlockClass && BlockClass.blockType) {
                 blockRegistry.register(BlockClass);
+
+                if (BlockClass.blockType === 'returncheckpoint' && typeof BlockClass.setBlocksMap === 'function') {
+                    BlockClass.setBlocksMap(placedBlocksMap);
+                }
             } else {
                 console.warn("Found invalid item in AllBlockClasses. Skipping.", BlockClass);
             }

@@ -13,6 +13,7 @@ import { initializeSimulationManager, startSimulation, stopSimulation, isSimulat
 import { initializeInputHandler, startSidebarDrag, updateHoverState, handleDeleteBlockEvent, isInteracting } from './inputHandler.js';
 
 import { Cursor } from '../cursor.js';
+import { initializeFileControls } from './fileManager.js';
 
 let clock;
 let cursorInstance;
@@ -99,6 +100,9 @@ async function init() {
 
     console.log("Initialization complete.");
     setLoading(false);
+
+    initializeFileControls();
+
     animate(); 
 }
 

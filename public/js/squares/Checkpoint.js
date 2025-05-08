@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 
-export class Decrease {
+export class Checkpoint {
+    static blockType = 'checkpoint';
+    static fallbackColor = 0x88c0d0; 
+    static label = 'Checkpoint';
+    static texturePath = '/textures/checkpoint.png';
+    static category = 'flow';
+    static description = 'Saves a designated point in the code execution to go back to';
 
-    static blockType = 'decrease';
-    static fallbackColor = 0xbf616a; 
-    static label = 'Decrease';
-    static texturePath = '/textures/decrease.png'; 
-    static defaultDecrementAmount = 1; 
-    static description = 'Decreases the value at the current index';
     static textureLoader = new THREE.TextureLoader();
     static blockTexture = null;
     static textureLoaded = false;
@@ -23,22 +23,21 @@ export class Decrease {
                     texture.magFilter = THREE.NearestFilter;
                     texture.minFilter = THREE.NearestFilter;
                     this.textureLoadFailed = false;
-
                 },
-                undefined, 
+                undefined,
                 (error) => {
-                    console.error(`${this.label}: Failed texture load "${this.texturePath}". Using fallback color.`, error);
+                    console.error(`${this.label}: Failed texture load "${this.texturePath}".`, error);
                     this.blockTexture = null; this.textureLoadFailed = true;
                 }
             );
         } catch (err) {
-            console.error(`${this.label}: Error setting up texture load. Using fallback color.`, err);
+            console.error(`${this.label}: Error setting up texture load.`, err);
             this.blockTexture = null; this.textureLoadFailed = true;
         }
     }
 
     static createPreviewMesh() {
-        return new THREE.Mesh( new THREE.PlaneGeometry(1, 1),
+        return new THREE.Mesh(new THREE.PlaneGeometry(1, 1),
             new THREE.MeshBasicMaterial({ color: this.fallbackColor, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false })
         );
     }
@@ -49,10 +48,10 @@ export class Decrease {
         const img = document.createElement('img');
         img.src = this.texturePath; img.alt = this.label; img.style.imageRendering = 'pixelated';
         img.onerror = () => {
-             console.warn(`Sidebar image failed to load for ${this.label} (${this.texturePath})`);
-             el.textContent = this.label.substring(0, 1);
-             el.style.textAlign = 'center'; el.style.lineHeight = '30px';
-             el.removeChild(img);
+            console.warn(`Sidebar image failed to load for ${this.label} (${this.texturePath})`);
+            el.textContent = this.label.substring(0, 1);
+            el.style.textAlign = 'center'; el.style.lineHeight = '30px';
+            el.removeChild(img);
         };
         el.appendChild(img);
         return el;
@@ -69,12 +68,12 @@ export class Decrease {
             alphaTest: useTexture ? 0.1 : 0,
             side: THREE.DoubleSide
         });
-        const square = new THREE.Mesh( new THREE.PlaneGeometry(1, 1), material );
+        const square = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
         group.add(square);
 
         group.userData = {
             blockType: this.blockType,
-            decrementAmount: this.defaultDecrementAmount 
+            checkpointName: `Checkpoint_${Math.floor(Math.random() * 1000)}`
         };
         group.position.copy(position);
         return group;
@@ -82,40 +81,54 @@ export class Decrease {
 
     static populateContextMenu(menuElement, blockGroup) {
         menuElement.innerHTML = '';
-        const currentAmount = blockGroup.userData.decrementAmount ?? this.defaultDecrementAmount;
+
+        const checkpointName = blockGroup.userData.checkpointName || `Checkpoint_${Math.floor(Math.random() * 1000)}`;
 
         const title = document.createElement('div');
         title.className = 'menu-title';
-        title.textContent = `${this.label} (-${currentAmount})`; 
+        title.textContent = `${this.label} (${checkpointName})`;
         menuElement.appendChild(title);
 
         const inputContainer = document.createElement('div');
         inputContainer.className = 'menu-item input-item';
+
         const label = document.createElement('label');
-        label.htmlFor = 'decrement-amount-input'; label.textContent = 'Amount: '; label.style.marginRight = '5px';
+        label.htmlFor = 'checkpoint-name-input';
+        label.textContent = 'Name: ';
+        label.style.marginRight = '5px';
+
         const input = document.createElement('input');
-        input.type = 'number'; input.id = 'decrement-amount-input'; input.className = 'menu-input';
-        input.value = currentAmount; input.min = "1"; input.step = "1"; input.style.width = "50px";
+        input.type = 'text';
+        input.id = 'checkpoint-name-input';
+        input.className = 'menu-input';
+        input.value = checkpointName;
+        input.style.width = "120px";
 
         input.addEventListener('change', (event) => {
-            let value = parseInt(event.target.value, 10);
-            if (isNaN(value) || value < 1) { value = 1; event.target.value = value; }
-            blockGroup.userData.decrementAmount = value;
-            title.textContent = `${this.label} (-${value})`;
-            console.log(`Decrement amount set to: ${value}`);
+            const value = event.target.value.trim() || `Checkpoint_${Math.floor(Math.random() * 1000)}`;
+            blockGroup.userData.checkpointName = value;
+            title.textContent = `${this.label} (${value})`;
+            console.log(`Checkpoint name set to: ${value}`);
         });
+
         input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                input.blur(); input.dispatchEvent(new Event('change'));
+                input.blur();
+                input.dispatchEvent(new Event('change'));
                 menuElement.dispatchEvent(new CustomEvent('closemenu', { bubbles: true }));
             }
         });
 
-        inputContainer.appendChild(label); inputContainer.appendChild(input); menuElement.appendChild(inputContainer);
+        inputContainer.appendChild(label);
+        inputContainer.appendChild(input);
+        menuElement.appendChild(inputContainer);
 
-        const separator = document.createElement('div'); separator.className = 'menu-separator'; menuElement.appendChild(separator);
+        const separator = document.createElement('div');
+        separator.className = 'menu-separator';
+        menuElement.appendChild(separator);
 
-        const deleteItem = document.createElement('div'); deleteItem.className = 'menu-item delete-item';
+        const deleteItem = document.createElement('div');
+        deleteItem.className = 'menu-item delete-item';
         deleteItem.innerHTML = `
   <span class="icon" style="color: var(--nord11);">
     <svg xmlns="http://www.w3.org/2000/svg"
@@ -136,7 +149,10 @@ export class Decrease {
   Delete Block
 `;
         deleteItem.addEventListener('click', () => {
-            menuElement.dispatchEvent(new CustomEvent('deleteblock', { detail: { blockGroup: blockGroup }, bubbles: true }));
+            menuElement.dispatchEvent(new CustomEvent('deleteblock', {
+                detail: { blockGroup: blockGroup },
+                bubbles: true
+            }));
         });
         menuElement.appendChild(deleteItem);
 
@@ -145,14 +161,18 @@ export class Decrease {
 
     static onCursorStep(blockInstance, currentGridPos, previousGridPos, blockGridMap, blockRegistry, cursor) {
         const currentGridKey = `${Math.round(currentGridPos.x - 0.5)},${Math.round(currentGridPos.y - 0.5)}`;
-        const decrementAmount = blockInstance.userData?.decrementAmount ?? this.defaultDecrementAmount;
+        const checkpointName = blockInstance.userData?.checkpointName || 'unnamed';
+        console.log(`${this.label} at ${currentGridKey}: Cursor passing through checkpoint ${checkpointName}`);
 
-        const currentValue = cursor.getCurrentIndexValue(); 
-
-        const newValue = (currentValue - decrementAmount + 256) % 256;
-
-        cursor.setCurrentIndexValue(newValue); 
-        console.log(`${this.label} at ${currentGridKey}: Decrementing index by ${decrementAmount}. Old: ${currentValue}, New: ${newValue}`);
+        if (blockRegistry) {
+            const ReturnCheckpointClass = blockRegistry.getBlockClass('returncheckpoint');
+            if (ReturnCheckpointClass && ReturnCheckpointClass.setLastVisitedCheckpoint) {
+                ReturnCheckpointClass.setLastVisitedCheckpoint({
+                    name: checkpointName,
+                    position: new THREE.Vector3().copy(blockInstance.position)
+                });
+            }
+        }
 
         let nextGridPos = null;
         if (previousGridPos) {

@@ -6,10 +6,11 @@ import { Increase } from './Increase.js';
 import { Decrease } from './Decrease.js';
 import { Next } from './Next.js';
 import { Previous } from './Previous.js'; 
-import { Pop } from './pop.js'; 
+import { Pop } from './Pop.js'; 
 import { Wire } from './Wire.js'; 
 import { JumpTo } from './JumpTo.js'; 
-
+import { Checkpoint } from './Checkpoint.js';
+import { ReturnCheckpoint } from './returnCheckpoint.js';
 export const AllBlockClasses = [
     Director,
     RandomDirection,
@@ -20,6 +21,8 @@ export const AllBlockClasses = [
     Next,
     Previous, 
     Pop,
+    Checkpoint,
+    ReturnCheckpoint,
     Wire,
     EmptyBlock,
 ];

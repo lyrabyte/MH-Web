@@ -7,7 +7,7 @@ export class Pop {
     static label = 'Pop Index';
     static texturePath = '/textures/pop.png';
     static defaultPopAmount = 1;
-
+    static description = 'Removes the buffer item at the current index';
     static textureLoader = new THREE.TextureLoader();
     static blockTexture = null;
     static textureLoaded = false;

@@ -97,29 +97,118 @@ body {
   
 }
 
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--index-display-height);
+  background-color: var(--index-background-color);
+  border-bottom: 1px solid var(--index-border-color);
+  z-index: 8; 
+  pointer-events: none; 
+}
+
+#top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--index-display-height);
+  background-color: var(--index-background-color);
+  border-bottom: 1px solid var(--index-border-color);
+  z-index: 9;
+  display: flex;
+  flex-direction: row;
+  pointer-events: none; 
+}
+
+#file-controls {
+  position: absolute;
+  right: 0; 
+  width: 140px;
+  height: var(--index-display-height);
+  background-color: transparent;
+  border-left: 1px solid var(--index-border-color);
+  z-index: 11;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 5px;
+  box-sizing: border-box;
+  pointer-events: auto; 
+}
+
+.file-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--nord2);
+  border: 2px solid var(--nord3);
+  border-radius: 4px;
+  color: var(--nord5);
+  font-family: var(--font-family-minecraft), monospace;
+  font-size: 9px;
+  cursor: pointer;
+  padding: 5px;
+  height: 40px;
+  width: 40px;
+  transition: all 0.2s ease;
+  image-rendering: pixelated;
+  font-smooth: never;
+  -webkit-font-smoothing: none;
+  pointer-events: auto; 
+  z-index: 12; 
+}
+
+.file-btn:hover {
+  background-color: var(--nord3);
+  border-color: var(--nord4);
+  transform: translateY(-2px);
+}
+
+.file-btn:active {
+  transform: translateY(0px);
+}
+
+.file-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--nord1);
+}
+
+.file-btn .btn-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+  margin: 0 auto 3px;
+}
+
+.file-btn .btn-label {
+  font-size: 8px;
+  white-space: nowrap;
+}
+
 #index-display {
   position: absolute;
   top: 0; 
   left: 0;
-  right: 140px; 
-  
+  width: calc(100% - 150px); 
   height: var(--index-display-height);
-  background-color: var(--index-background-color);
-  border-bottom: 1px solid var(--index-border-color);
-  z-index: 10; 
+  background-color: transparent;
+  z-index: 10;
   box-sizing: border-box;
   color: var(--index-text-color);
   font-family: var(--font-family-minecraft), monospace;
   font-size: 16px;
-  image-rendering: pixelated;
-  font-smooth: never; 
-  -webkit-font-smoothing: none; 
-  line-height: 1.2;
   padding: 4px 10px;
-  
   overflow: hidden;
   display: flex; 
   flex-direction: column;
+  pointer-events: auto; 
 }
 
 #container {
@@ -127,13 +216,33 @@ body {
   top: var(--index-display-height); 
   left: 0;
   right: 140px; 
-  bottom: 0; 
-  
+  bottom: 0;
+  overflow: hidden; 
+}
+
+#sidebar-top-header {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 140px;
+  height: var(--index-display-height);
+  background-color: transparent;
+  border-left: 1px solid var(--index-border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family-minecraft), monospace;
+  font-size: 20px;
+  color: var(--nord8);
+  text-shadow: 1px 1px 0 var(--nord0);
+  box-sizing: border-box;
+  z-index: 12;
+  pointer-events: auto; 
 }
 
 #sidebar {
   position: absolute;
-  top: var(--index-display-height); 
+  top: 0; 
   right: 0;
   width: 140px;
   bottom: 0; 
@@ -148,12 +257,25 @@ body {
   overflow-y: auto;
 }
 
+.sidebar-header {
+  margin-top: 5px;
+  font-size: 1.1em;
+  font-weight: 600;
+  margin-bottom: 15px;
+  color: var(--nord4);
+  width: 100%;
+  text-align: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--nord3);
+  flex-shrink: 0;
+}
+
 #index-header {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   margin-bottom: 2px;
-  
+  height: 20px; 
   flex-shrink: 0; 
 }
 
@@ -168,13 +290,16 @@ body {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
-  overflow-x: auto; 
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 3px 0;
   border-top: 1px solid var(--nord2);
   scrollbar-width: thin;
   scrollbar-color: var(--nord3) var(--nord1);
-  flex-grow: 1; 
-  min-height: 0; 
+  flex-grow: 1;
+  min-height: 25px; 
+  height: 25px;
+  max-height: 25px; 
 }
 
 #index-content::-webkit-scrollbar {
@@ -192,8 +317,10 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  
   flex-grow: 1;
+  height: 100%;
+  min-height: 20px; 
+  white-space: nowrap;
 }
 
 #index-content .index-bracket {
@@ -226,18 +353,6 @@ body {
   
 }
 
-.sidebar-header {
-  font-size: 1.1em;
-  font-weight: 600;
-  margin-bottom: 15px;
-  color: var(--nord4);
-  width: 100%;
-  text-align: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--nord3);
-  flex-shrink: 0;
-}
-
 .sidebar-item {
   width: 64px;
   height: 64px;
@@ -265,6 +380,7 @@ body {
   object-fit: contain;
   image-rendering: pixelated;
   background-color: transparent;
+  pointer-events: none;
 }
 
 .sidebar-item .item-label {
@@ -311,22 +427,43 @@ body {
 #tooltip {
   position: absolute;
   display: none;
-  background-color: rgba(0, 0, 0, 0.75); 
-  border: 2px solid #333;
-  box-shadow: 2px 2px 0px #222;
-  padding: 6px 10px;
+  background-color: rgba(16, 0, 16, 0.94);
+  border: 2px solid #2C0E37;
+  box-shadow: none;
+  padding: 8px 10px; 
   border-radius: 0px;
-  color: #FFF;
+  color: #FFFFFF;
   font-family: var(--font-family-minecraft);
-  font-size: 16px;
-  text-shadow: var(--nord-shadow-offset) var(--nord-shadow-offset) 0px #222; 
-  white-space: nowrap;
+  font-size: 14px;
+  text-shadow: 1px 1px 0px #000;
+  white-space: pre-wrap;
+  max-width: 300px;
   z-index: 1001;
   pointer-events: none;
   image-rendering: pixelated;
   font-smooth: never;
   -webkit-font-smoothing: none;
-  line-height: 1;
+  line-height: 1.5; 
+  display: flex;
+  flex-direction: column;
+  justify-content: center; 
+}
+
+#tooltip .tooltip-title {
+  color: #A865C9;
+  margin: 0; 
+  font-weight: normal;
+}
+
+#tooltip .tooltip-description {
+  color: #AAAAAA;
+  font-size: 12px;
+  margin-top: 4px; 
+}
+
+#tooltip:not(:has(.tooltip-description)) .tooltip-title {
+  
+  padding: 2px 0; 
 }
 
 #context-menu {

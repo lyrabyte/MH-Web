@@ -6,7 +6,7 @@ export class EmptyBlock {
     static fallbackColor = 0x4c566a; 
     static label = 'Empty Block';
     static texturePath = '/textures/stop.png'; 
-
+    static description = 'EMPTY THIS BLOCK DOES NOTHING';
     static textureLoader = new THREE.TextureLoader();
     static blockTexture = null;
     static textureLoaded = false;
@@ -87,7 +87,25 @@ export class EmptyBlock {
 
         const deleteItem = document.createElement('div');
         deleteItem.className = 'menu-item delete-item'; 
-        deleteItem.innerHTML = `<span class="icon" style="color: var(--nord11);">🗑️</span> Delete Block`;
+        deleteItem.innerHTML = `
+  <span class="icon" style="color: var(--nord11);">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 24 24"
+         width="16" height="16"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6"/>
+      <line x1="10" y1="11" x2="10" y2="17"/>
+      <line x1="14" y1="11" x2="14" y2="17"/>
+      <path d="M9 6V4h6v2"/>
+    </svg>
+  </span>
+  Delete Block
+`;
         deleteItem.addEventListener('click', () => {
 
             menuElement.dispatchEvent(new CustomEvent('deleteblock', {
@@ -98,16 +116,6 @@ export class EmptyBlock {
         menuElement.appendChild(deleteItem);
     }
 
-    /**
-     * This block does nothing except stop the cursor.
-      * @param {THREE.Group} blockInstance The specific instance of the block the cursor is on.
-      * @param {{x: number, y: number}} currentGridPos The cursor's current grid position.
-      * @param {{x: number, y: number}|null} previousGridPos The cursor's previous grid position.
-      * @param {Map<string, THREE.Group>} blockGridMap A map of grid keys ("x,y") to block instances.
-      * @param {import('../BlockRegistry').BlockRegistry} blockRegistry The block registry.
-      * @param {import('../cursor').Cursor} cursor The cursor instance itself.
-      * @returns {{action: string, nextGridPos: {x: number, y: number}|null}}
-     */
     static onCursorStep(blockInstance, currentGridPos, previousGridPos, blockGridMap, blockRegistry, cursor) {
         const currentGridKey = `${Math.round(currentGridPos.x - 0.5)},${Math.round(currentGridPos.y - 0.5)}`;
         console.log(`${this.label} at ${currentGridKey}: Stopping cursor.`);

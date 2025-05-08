@@ -97,6 +97,7 @@ export class Cursor {
     audioLoader = null;
     clickSoundBuffer = null;
     fizzleSoundBuffer = null;
+    returnSoundBuffer = null; 
 
     constructor(scene, blockGridMap, blockRegistry, listener, initialGridPos = { x: 0.5, y: 0.5 }) {
         this.scene = scene;
@@ -134,23 +135,49 @@ export class Cursor {
     }
 
     _loadSounds() {
-        if (!this.audioLoader) return;
+        if (!this.audioLoader) {
+            this.audioLoader = new THREE.AudioLoader();
+        }
+
         const clickPath = '/sounds/click.wav';
         const fizzlePath = '/sounds/Booffff.wav';
+        const returnPath = '/sounds/return.wav'; 
 
         this.audioLoader.load(clickPath,
-            (buffer) => { this.clickSoundBuffer = buffer; console.log(`Sound loaded: ${clickPath}`); },
+            (buffer) => {
+                this.clickSoundBuffer = buffer;
+                console.log("Click sound loaded");
+            },
             undefined,
-            (error) => { console.error(`Error loading sound ${clickPath}:`, error); }
+            (error) => {
+                console.error("Error loading click sound:", error);
+            }
         );
+
         this.audioLoader.load(fizzlePath,
-            (buffer) => { this.fizzleSoundBuffer = buffer; console.log(`Sound loaded: ${fizzlePath}`); },
+            (buffer) => {
+                this.fizzleSoundBuffer = buffer;
+                console.log("Fizzle sound loaded");
+            },
             undefined,
-            (error) => { console.error(`Error loading sound ${fizzlePath}:`, error); }
+            (error) => {
+                console.error("Error loading fizzle sound:", error);
+            }
+        );
+
+        this.audioLoader.load(returnPath,
+            (buffer) => {
+                this.returnSoundBuffer = buffer;
+                console.log("Return sound loaded");
+            },
+            undefined,
+            (error) => {
+                console.error("Error loading return sound:", error);
+            }
         );
     }
 
-    _playSound(buffer) {
+    _playSound(buffer, pitchMin = 1.0, pitchMax = 1.0) {
         if (!this.audioListener || !buffer) return;
         if (this.audioListener.context.state === 'suspended') {
             this.audioListener.context.resume().catch(err => console.error("Audio resume failed:", err));
@@ -159,8 +186,19 @@ export class Cursor {
             const sound = new THREE.Audio(this.audioListener);
             sound.setBuffer(buffer);
             sound.setVolume(0.6);
+
+            const pitch = pitchMin === pitchMax 
+                ? pitchMin 
+                : pitchMin + Math.random() * (pitchMax - pitchMin);
+
+            sound.setPlaybackRate(pitch);
             sound.play();
         }
+    }
+
+    playReturnSound() {
+
+        this._playSound(this.returnSoundBuffer, 1.5, 1.8);
     }
 
     _createParticleSystem() {
@@ -364,9 +402,224 @@ export class Cursor {
          }
     }
 
-    step() { if (this.isPaused) { if (Date.now() >= this.pauseEndTime) { this.isPaused = false; const tPAP = this.nextPosAfterPause; this.nextPosAfterPause = null; this.pauseEndTime = 0; if (tPAP && typeof tPAP.x === 'number' && typeof tPAP.y === 'number') { this._animateMove(tPAP); return true; } return true; } else { return true; } } if (!this.isActive || this.isMoving || this.isStopped || this._fizzleTween || !this.points) { return this.isActive && this.isMoving; } this.worldPos = this._gridToWorld(this.gridPos); this.points.position.copy(this.worldPos); this._updateCurrentBlock(); const cgk = `${this.gridPos.x},${this.gridPos.y}`; if (!this.currentBlock) { console.log(`Cursor stopping: Empty square ${cgk}.`); this._fizzle(); return false; } if (!this.currentBlockClass || typeof this.currentBlockClass.onCursorStep !== 'function') { const bt = this.currentBlock?.userData?.blockType || 'Unknown'; console.log(`Cursor stopping: Invalid block '${bt}' at ${cgk}.`); this._fizzle(); return false; } let sr; try { sr = this.currentBlockClass.onCursorStep(this.currentBlock, {...this.gridPos}, this.previousGridPos ? {...this.previousGridPos} : null, this.blockGridMap, this.blockRegistry, this); } catch (be) { const bt = this.currentBlock?.userData?.blockType || 'Unknown'; console.error(`Cursor Error: Exception in onCursorStep for '${bt}' at ${cgk}. Stopping.`, be); this._fizzle(); return false; } if (!sr || typeof sr.action !== 'string') { const bt = this.currentBlock?.userData?.blockType || 'Unknown'; console.error(`Cursor Error: Invalid stepResult from '${bt}' at ${cgk}. Stopping.`, sr); this._fizzle(); return false; } let cs = true; switch (sr.action) { case 'move': if (!sr.nextGridPos || typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y)) { console.error(`Cursor Error: Action 'move' invalid integer 'nextGridPos'. Stopping.`, sr); this._fizzle(); cs = false; } else { this._animateMove(sr.nextGridPos); } break; case 'moveAndFizzle': if (!sr.nextGridPos || typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y)) { console.error(`Cursor Error: Action 'moveAndFizzle' invalid integer 'nextGridPos'. Stopping in place.`, sr); this._fizzle(); cs = false; } else { this._animateMoveAndFizzle(sr.nextGridPos); cs = false; } break; case 'pause': if (typeof sr.pauseDuration !== 'number' || sr.pauseDuration <= 0) { console.error(`Cursor Error: Action 'pause' invalid 'pauseDuration'. Stopping.`, sr); this._fizzle(); cs = false; } else { if (sr.nextGridPos && (typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y))) { console.warn(`Cursor Warning: Action 'pause' invalid 'nextGridPos'. Pausing without move intent.`, sr); this.nextPosAfterPause = null; } else { this.nextPosAfterPause = sr.nextGridPos || null; } this.isPaused = true; this.pauseEndTime = Date.now() + sr.pauseDuration; } break; case 'fizzleInPlace': this._fizzle(); cs = false; break; default: console.warn(`Cursor Warning: Block at ${cgk} returned unknown action '${sr.action}'. Stopping.`); this._fizzle(); cs = false; break; } return cs; }
+    step() { 
+        if (this.isPaused) { 
+            if (Date.now() >= this.pauseEndTime) { 
+                this.isPaused = false; 
+                const tPAP = this.nextPosAfterPause; 
+                this.nextPosAfterPause = null; 
+                this.pauseEndTime = 0; 
+                if (tPAP && typeof tPAP.x === 'number' && typeof tPAP.y === 'number') { 
+                    this._animateMove(tPAP); 
+                    return true; 
+                } 
+                return true; 
+            } else { 
+                return true; 
+            } 
+        } 
+        if (!this.isActive || this.isMoving || this.isStopped || this._fizzleTween || !this.points) { 
+            return this.isActive && this.isMoving; 
+        } 
+        this.worldPos = this._gridToWorld(this.gridPos); 
+        this.points.position.copy(this.worldPos); 
+        this._updateCurrentBlock(); 
+        const cgk = `${this.gridPos.x},${this.gridPos.y}`; 
+        if (!this.currentBlock) { 
+            console.log(`Cursor stopping: Empty square ${cgk}.`); 
+            this._fizzle(); 
+            return false; 
+        } 
+        if (!this.currentBlockClass || typeof this.currentBlockClass.onCursorStep !== 'function') { 
+            const bt = this.currentBlock?.userData?.blockType || 'Unknown'; 
+            console.log(`Cursor stopping: Invalid block '${bt}' at ${cgk}.`); 
+            this._fizzle(); 
+            return false; 
+        } 
+        let sr; 
+        try { 
+            sr = this.currentBlockClass.onCursorStep(this.currentBlock, {...this.gridPos}, this.previousGridPos ? {...this.previousGridPos} : null, this.blockGridMap, this.blockRegistry, this); 
+        } catch (be) { 
+            const bt = this.currentBlock?.userData?.blockType || 'Unknown'; 
+            console.error(`Cursor Error: Exception in onCursorStep for '${bt}' at ${cgk}. Stopping.`, be); 
+            this._fizzle(); 
+            return false; 
+        } 
+        if (!sr || typeof sr.action !== 'string') { 
+            const bt = this.currentBlock?.userData?.blockType || 'Unknown'; 
+            console.error(`Cursor Error: Invalid stepResult from '${bt}' at ${cgk}. Stopping.`, sr); 
+            this._fizzle(); 
+            return false; 
+        } 
+        let cs = true; 
+        switch (sr.action) { 
+            case 'move': 
+                if (!sr.nextGridPos || typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y)) { 
+                    console.error(`Cursor Error: Action 'move' invalid integer 'nextGridPos'. Stopping.`, sr); 
+                    this._fizzle(); 
+                    cs = false; 
+                } else { 
+                    this._animateMove(sr.nextGridPos); 
+                } 
+                break; 
+            case 'moveAndFizzle': 
+                if (!sr.nextGridPos || typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y)) { 
+                    console.error(`Cursor Error: Action 'moveAndFizzle' invalid integer 'nextGridPos'. Stopping in place.`, sr); 
+                    this._fizzle(); 
+                    cs = false; 
+                } else { 
+                    this._animateMoveAndFizzle(sr.nextGridPos); 
+                    cs = false; 
+                } 
+                break; 
+            case 'pause': 
+                if (typeof sr.pauseDuration !== 'number' || sr.pauseDuration <= 0) { 
+                    console.error(`Cursor Error: Action 'pause' invalid 'pauseDuration'. Stopping.`, sr); 
+                    this._fizzle(); 
+                    cs = false; 
+                } else { 
+                    if (sr.nextGridPos && (typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number' || !Number.isInteger(sr.nextGridPos.x) || !Number.isInteger(sr.nextGridPos.y))) { 
+                        console.warn(`Cursor Warning: Action 'pause' invalid 'nextGridPos'. Pausing without move intent.`, sr); 
+                        this.nextPosAfterPause = null; 
+                    } else { 
+                        this.nextPosAfterPause = sr.nextGridPos || null; 
+                    } 
+                    this.isPaused = true; 
+                    this.pauseEndTime = Date.now() + sr.pauseDuration; 
+                } 
+                break; 
+            case 'teleport':
+                if (!sr.teleportPos || typeof sr.teleportPos.x !== 'number' || typeof sr.teleportPos.y !== 'number') {
+                    console.error(`Cursor Error: Action 'teleport' missing valid 'teleportPos'. Stopping.`, sr);
+                    this._fizzle();
+                    cs = false;
+                } else if (!sr.nextGridPos || typeof sr.nextGridPos.x !== 'number' || typeof sr.nextGridPos.y !== 'number') {
+                    console.error(`Cursor Error: Action 'teleport' missing valid 'nextGridPos'. Stopping.`, sr);
+                    this._fizzle();
+                    cs = false;
+                } else {
 
-    _animateMove(targetGridPos) { if (this.isMoving || !this.points || this._fizzleTween) return; this.isMoving = true; const twp = this._gridToWorld(targetGridPos); if (this._moveTween) { if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); if (this._moveTween.z) TWEEN.remove(this._moveTween.z); if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); } this._moveTween = {}; const pbm = { ...this.gridPos }; this._playSound(this.clickSoundBuffer); const xye = TWEEN.Easing.Quadratic.Out; this._moveTween.xy = new TWEEN.Tween(this.points.position).to({ x: twp.x, y: twp.y }, MOVE_DURATION_MS).easing(xye).onComplete(() => { this.isMoving = false; this.previousGridPos = pbm; this.gridPos = targetGridPos; this.worldPos.copy(this.points.position); this._moveTween = null; }).start(); const ze = TWEEN.Easing.Quadratic.InOut; this._moveTween.z = new TWEEN.Tween(this.points.position).to({ z: [this.worldPos.z + HOP_HEIGHT, twp.z] }, MOVE_DURATION_MS).easing(ze).start(); const se = TWEEN.Easing.Quadratic.InOut; this._moveTween.scale = new TWEEN.Tween(this.points.scale).to({ x: [PULSE_SCALE, 1.0], y: [PULSE_SCALE, 1.0], z: [PULSE_SCALE, 1.0] }, MOVE_DURATION_MS).easing(se).start(); }
-    _animateMoveAndFizzle(targetGridPos) { if (this.isMoving || !this.points || this._fizzleTween) return; this.isMoving = true; this.isStopped = true; this.isActive = false; const twp = this._gridToWorld(targetGridPos); if (this._moveTween) { if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); if (this._moveTween.z) TWEEN.remove(this._moveTween.z); if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); } this._moveTween = {}; const pbm = { ...this.gridPos }; this._playSound(this.clickSoundBuffer); const xye = TWEEN.Easing.Quadratic.Out; this._moveTween.xy = new TWEEN.Tween(this.points.position).to({ x: twp.x, y: twp.y }, MOVE_DURATION_MS).easing(xye).onComplete(() => { this.previousGridPos = pbm; this.gridPos = targetGridPos; this.worldPos.copy(this.points.position); this.currentBlock = null; this.currentBlockClass = null; this._moveTween = null; this.isMoving = false; this._fizzle(); }).start(); const ze = TWEEN.Easing.Quadratic.InOut; this._moveTween.z = new TWEEN.Tween(this.points.position).to({ z: [this.worldPos.z + HOP_HEIGHT, twp.z] }, MOVE_DURATION_MS).easing(ze).start(); const se = TWEEN.Easing.Quadratic.InOut; this._moveTween.scale = new TWEEN.Tween(this.points.scale).to({ x: [PULSE_SCALE, 1.0], y: [PULSE_SCALE, 1.0], z: [PULSE_SCALE, 1.0] }, MOVE_DURATION_MS).easing(se).start(); }
-    _fizzle() { if (!this.points || !this.particleMaterial || this._fizzleTween) { if (this.isStopped && this.points && this.points.visible && !this._fizzleTween) { this.points.visible = false; } return; } this.isStopped = true; this.isActive = false; this.isMoving = false; if (this._moveTween) { if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); if (this._moveTween.z) TWEEN.remove(this._moveTween.z); if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); this._moveTween = null; } this._playSound(this.fizzleSoundBuffer); const fu = this.particleMaterial.uniforms.uFizzleFactor; this.points.visible = true; this._fizzleTween = new TWEEN.Tween(fu).to({ value: 1.0 }, FIZZLE_DURATION_MS).easing(TWEEN.Easing.Exponential.In).onComplete(() => { if (this.points) { this.points.visible = false; } fu.value = 0.0; this.isMoving = false; this.isActive = false; this.isStopped = true; this._fizzleTween = null; }).start(); }
+                    this.playReturnSound();
+
+                    this.previousGridPos = {...this.gridPos};
+                    this.gridPos = {x: Math.round(sr.teleportPos.x - 0.5), y: Math.round(sr.teleportPos.y - 0.5)};
+                    this.worldPos = this._gridToWorld(this.gridPos);
+                    this.points.position.copy(this.worldPos);
+
+                    this._animateMove(sr.nextGridPos);
+                }
+                break;
+            case 'fizzleInPlace': 
+                this._fizzle(); 
+                cs = false; 
+                break; 
+            default: 
+                console.warn(`Cursor Warning: Block at ${cgk} returned unknown action '${sr.action}'. Stopping.`); 
+                this._fizzle(); 
+                cs = false; 
+                break; 
+        } 
+        return cs; 
+    }
+
+    _animateMove(targetGridPos) { 
+        if (this.isMoving || !this.points || this._fizzleTween) return; 
+        this.isMoving = true; 
+        const twp = this._gridToWorld(targetGridPos); 
+        if (this._moveTween) { 
+            if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); 
+            if (this._moveTween.z) TWEEN.remove(this._moveTween.z); 
+            if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); 
+        } 
+        this._moveTween = {}; 
+        const pbm = { ...this.gridPos }; 
+
+        this._playSound(this.clickSoundBuffer, 0.9, 1.1);
+
+        const xye = TWEEN.Easing.Quadratic.Out; 
+        this._moveTween.xy = new TWEEN.Tween(this.points.position).to({ x: twp.x, y: twp.y }, MOVE_DURATION_MS).easing(xye).onComplete(() => { 
+            this.isMoving = false; 
+            this.previousGridPos = pbm; 
+            this.gridPos = targetGridPos; 
+            this.points.position.set(twp.x, twp.y, twp.z);
+            this.worldPos.copy(twp);
+            this._moveTween = null; 
+        }).start(); 
+        const ze = TWEEN.Easing.Quadratic.InOut; 
+        this._moveTween.z = new TWEEN.Tween(this.points.position).to({ z: [this.worldPos.z + HOP_HEIGHT, twp.z] }, MOVE_DURATION_MS).easing(ze).start(); 
+        const se = TWEEN.Easing.Quadratic.InOut; 
+        this._moveTween.scale = new TWEEN.Tween(this.points.scale).to({ x: [PULSE_SCALE, 1.0], y: [PULSE_SCALE, 1.0], z: [PULSE_SCALE, 1.0] }, MOVE_DURATION_MS).easing(se).start(); 
+    }
+
+    _animateMoveAndFizzle(targetGridPos) { 
+        if (this.isMoving || !this.points || this._fizzleTween) return; 
+        this.isMoving = true; 
+        this.isStopped = true; 
+        this.isActive = false; 
+        const twp = this._gridToWorld(targetGridPos); 
+        if (this._moveTween) { 
+            if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); 
+            if (this._moveTween.z) TWEEN.remove(this._moveTween.z); 
+            if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); 
+        } 
+        this._moveTween = {}; 
+        const pbm = { ...this.gridPos }; 
+
+        this._playSound(this.clickSoundBuffer, 0.9, 1.1);
+
+        const xye = TWEEN.Easing.Quadratic.Out; 
+        this._moveTween.xy = new TWEEN.Tween(this.points.position).to({ x: twp.x, y: twp.y }, MOVE_DURATION_MS).easing(xye).onComplete(() => { 
+            this.previousGridPos = pbm; 
+            this.gridPos = targetGridPos; 
+            this.points.position.set(twp.x, twp.y, twp.z);
+            this.worldPos.copy(twp);
+            this.currentBlock = null; 
+            this.currentBlockClass = null; 
+            this._moveTween = null; 
+            this.isMoving = false; 
+            this._fizzle(); 
+        }).start(); 
+        const ze = TWEEN.Easing.Quadratic.InOut; 
+        this._moveTween.z = new TWEEN.Tween(this.points.position).to({ z: [this.worldPos.z + HOP_HEIGHT, twp.z] }, MOVE_DURATION_MS).easing(ze).start(); 
+        const se = TWEEN.Easing.Quadratic.InOut; 
+        this._moveTween.scale = new TWEEN.Tween(this.points.scale).to({ x: [PULSE_SCALE, 1.0], y: [PULSE_SCALE, 1.0], z: [PULSE_SCALE, 1.0] }, MOVE_DURATION_MS).easing(se).start(); 
+    }
+
+    _fizzle() { 
+        if (!this.points || !this.particleMaterial || this._fizzleTween) { 
+            if (this.isStopped && this.points && this.points.visible && !this._fizzleTween) { 
+                this.points.visible = false; 
+            } 
+            return; 
+        }
+
+        const exactWorldPos = this._gridToWorld(this.gridPos);
+        this.points.position.copy(exactWorldPos);
+        this.worldPos.copy(exactWorldPos);
+
+        this.isStopped = true; 
+        this.isActive = false; 
+        this.isMoving = false; 
+        if (this._moveTween) { 
+            if (this._moveTween.xy) TWEEN.remove(this._moveTween.xy); 
+            if (this._moveTween.z) TWEEN.remove(this._moveTween.z); 
+            if (this._moveTween.scale) TWEEN.remove(this._moveTween.scale); 
+            this._moveTween = null; 
+        } 
+
+        this._playSound(this.fizzleSoundBuffer, 0.8, 1.0);
+
+        const fu = this.particleMaterial.uniforms.uFizzleFactor; 
+        this.points.visible = true; 
+        this._fizzleTween = new TWEEN.Tween(fu).to({ value: 1.0 }, FIZZLE_DURATION_MS).easing(TWEEN.Easing.Exponential.In).onComplete(() => { 
+            if (this.points) { 
+                this.points.visible = false; 
+            } 
+            fu.value = 0.0; 
+            this.isMoving = false; 
+            this.isActive = false; 
+            this.isStopped = true; 
+            this._fizzleTween = null; 
+        }).start(); 
+    }
 }

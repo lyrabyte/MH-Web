@@ -7,7 +7,7 @@ export class Previous {
     static label = 'Previous Index';
     static texturePath = '/textures/previous.png';
     static defaultPreviousAmount = 1;
-
+    static description = 'Goes to previous index';
     static textureLoader = new THREE.TextureLoader();
     static blockTexture = null;
     static textureLoaded = false;
@@ -91,7 +91,25 @@ export class Previous {
         inputContainer.appendChild(label); inputContainer.appendChild(input); menuElement.appendChild(inputContainer);
         const separator = document.createElement('div'); separator.className = 'menu-separator'; menuElement.appendChild(separator);
         const deleteItem = document.createElement('div'); deleteItem.className = 'menu-item delete-item';
-        deleteItem.innerHTML = `<span class="icon" style="color: var(--nord11);">🗑️</span> Delete Block`;
+        deleteItem.innerHTML = `
+  <span class="icon" style="color: var(--nord11);">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 24 24"
+         width="16" height="16"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6"/>
+      <line x1="10" y1="11" x2="10" y2="17"/>
+      <line x1="14" y1="11" x2="14" y2="17"/>
+      <path d="M9 6V4h6v2"/>
+    </svg>
+  </span>
+  Delete Block
+`;
         deleteItem.addEventListener('click', () => { menuElement.dispatchEvent(new CustomEvent('deleteblock', { detail: { blockGroup: blockGroup }, bubbles: true })); });
         menuElement.appendChild(deleteItem);
         requestAnimationFrame(() => input.focus());

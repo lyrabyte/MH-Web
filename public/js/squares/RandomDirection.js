@@ -6,7 +6,7 @@ export class RandomDirection {
     static fallbackColor = 0xb48ead;
     static label = 'Random'; 
     static texturePath = '/textures/randomdir.png'; 
-
+    static description = 'Changes direction to a random direction excluding the direction it came from';
     static textureLoader = new THREE.TextureLoader();
     static blockTexture = null;
     static textureLoaded = false;
@@ -71,24 +71,31 @@ export class RandomDirection {
         const title = document.createElement('div'); title.className = 'menu-title'; title.textContent = this.label; menuElement.appendChild(title);
         const separator = document.createElement('div'); separator.className = 'menu-separator'; menuElement.appendChild(separator);
         const deleteItem = document.createElement('div'); deleteItem.className = 'menu-item delete-item';
-        deleteItem.innerHTML = `<span class="icon" style="color: var(--nord11);">🗑️</span> Delete Block`;
+        deleteItem.innerHTML = `
+  <span class="icon" style="color: var(--nord11);">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         viewBox="0 0 24 24"
+         width="16" height="16"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="2"
+         stroke-linecap="round"
+         stroke-linejoin="round">
+      <polyline points="3 6 5 6 21 6"/>
+      <path d="M19 6l-1 14H6L5 6"/>
+      <line x1="10" y1="11" x2="10" y2="17"/>
+      <line x1="14" y1="11" x2="14" y2="17"/>
+      <path d="M9 6V4h6v2"/>
+    </svg>
+  </span>
+  Delete Block
+`;
         deleteItem.addEventListener('click', () => {
             menuElement.dispatchEvent(new CustomEvent('deleteblock', { detail: { blockGroup: blockGroup }, bubbles: true }));
         });
         menuElement.appendChild(deleteItem);
     }
 
-    /**
-     * Determines the cursor's next action by checking adjacent blocks
-     * and randomly choosing one of the occupied directions.
-     * @param {THREE.Group} blockInstance The specific instance of the block the cursor is on.
-     * @param {{x: number, y: number}} currentGridPos The cursor's current grid position.
-     * @param {{x: number, y: number}|null} previousGridPos The cursor's previous grid position.
-     * @param {Map<string, THREE.Group>} blockGridMap A map of grid keys ("x,y") to block instances.
-     * @param {import('../BlockRegistry').BlockRegistry} blockRegistry The block registry.
-     * @returns {{action: string, nextGridPos: {x: number, y: number}|null}}
-     *          Action can be 'move' or 'fizzleInPlace'.
-     */
     static onCursorStep(blockInstance, currentGridPos, previousGridPos, blockGridMap, blockRegistry) {
         const currentGridKey = `${Math.round(currentGridPos.x - 0.5)},${Math.round(currentGridPos.y - 0.5)}`;
 
