@@ -94,7 +94,9 @@ export function getGridKeyFromWorld(worldX, worldY) {
         console.warn("Invalid input to getGridKeyFromWorld:", worldX, worldY);
         return null;
     }
-    return `${Math.round(worldX - 0.5)},${Math.round(worldY - 0.5)}`;
+    const gridX = Math.floor(worldX);
+    const gridY = Math.floor(worldY);
+    return `${gridX},${gridY}`;
 }
 
 export function isOccupied(worldX, worldY, excludeKey = null) {

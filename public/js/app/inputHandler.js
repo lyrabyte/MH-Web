@@ -376,8 +376,13 @@ function handleSidebarDragMove(event) {
     if (!isDragging || !dragData.previewMesh) return;
     const worldPos = _screenToWorld(event.clientX, event.clientY);
     if (worldPos) {
-        const gridX_center = Math.floor(worldPos.x + 0.5) + 0.5;
-        const gridY_center = Math.floor(worldPos.y + 0.5) + 0.5;
+
+        const gridX = Math.floor(worldPos.x);
+        const gridY = Math.floor(worldPos.y);
+
+        const gridX_center = gridX + 0.5;
+        const gridY_center = gridY + 0.5;
+
         const occupied = _isOccupied(gridX_center, gridY_center);
         dragData.isValidTarget = !occupied;
         dragData.lastValidX = gridX_center;
@@ -409,8 +414,9 @@ function handleSidebarDragEnd(event) {
 
     const worldPos = _screenToWorld(event.clientX, event.clientY);
     if (dragData.isValidTarget && worldPos && dragData.type && dragData.lastValidX !== null && dragData.lastValidY !== null) {
-        const gridX_int = Math.round(dragData.lastValidX - 0.5);
-        const gridY_int = Math.round(dragData.lastValidY - 0.5);
+
+        const gridX_int = Math.floor(dragData.lastValidX);
+        const gridY_int = Math.floor(dragData.lastValidY);
         _addBlock(dragData.type, gridX_int, gridY_int);
     } else {
 
@@ -469,13 +475,18 @@ function handleExistingBlockDragMove(event) {
     if (!isDraggingExistingBlock || !dragPreviewMesh) return;
     const worldPos = _screenToWorld(event.clientX, event.clientY);
     if (worldPos) {
-        const gx_center = Math.floor(worldPos.x + 0.5) + 0.5;
-        const gy_center = Math.floor(worldPos.y + 0.5) + 0.5;
-        const occupied = _isOccupied(gx_center, gy_center, draggedBlockOriginalKey);
+
+        const gridX = Math.floor(worldPos.x);
+        const gridY = Math.floor(worldPos.y);
+
+        const gridX_center = gridX + 0.5;
+        const gridY_center = gridY + 0.5;
+
+        const occupied = _isOccupied(gridX_center, gridY_center, draggedBlockOriginalKey);
         draggedBlockIsValidTarget = !occupied;
-        draggedBlockLastValidX = gx_center;
-        draggedBlockLastValidY = gy_center;
-        dragPreviewMesh.position.set(gx_center, gy_center, 0.1);
+        draggedBlockLastValidX = gridX_center;
+        draggedBlockLastValidY = gridY_center;
+        dragPreviewMesh.position.set(gridX_center, gridY_center, 0.1);
         if (dragPreviewMesh.material) {
             dragPreviewMesh.material.opacity = draggedBlockIsValidTarget ? Config.validDropOpacity : Config.invalidDropOpacity;
         }
@@ -536,10 +547,8 @@ function handleExistingBlockDragEnd(event) {
 
         if (draggedBlock && draggedBlockOriginalKey) {
             const map = _getPlacedBlocksMap();
-            if (map && !map.has(draggedBlockOriginalKey)) {
-                 map.set(draggedBlockOriginalKey, draggedBlock);
+            if (map && !map.has(draggedBlockOriginalKey)) map.set(draggedBlockOriginalKey, draggedBlock);
 
-             }
         }
     }
 
