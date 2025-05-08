@@ -149,7 +149,6 @@ function populateSidebar() {
 }
 
 export function showContextMenu(event, blockInstance, updateHoverStateCallback) {
-
     hideContextMenu(null); 
 
     if (!blockInstance?.userData?.blockType || !contextMenu || !_blockRegistry) {
@@ -171,7 +170,6 @@ export function showContextMenu(event, blockInstance, updateHoverStateCallback) 
 
         if (contextMenu.childElementCount > 0) { 
             positionContextMenu(event.clientX, event.clientY);
-            contextMenu.classList.add('active');
 
             return blockInstance; 
         } else {
@@ -186,16 +184,36 @@ export function showContextMenu(event, blockInstance, updateHoverStateCallback) 
 
 function positionContextMenu(x, y) {
     if (!contextMenu) return;
+
+    contextMenu.style.left = '-9999px';
+    contextMenu.style.top = '-9999px';
+    contextMenu.classList.add('active');
+
     const menuRect = contextMenu.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
 
     let left = x;
     let top = y;
 
-    if (left + menuRect.width > window.innerWidth - 10) { 
-        left = window.innerWidth - menuRect.width - 10;
+    if (left + menuRect.width > viewportWidth - 10) {
+
+        if (x - menuRect.width > 10) {
+            left = x - menuRect.width;
+        } else {
+
+            left = Math.max(10, Math.min(viewportWidth - menuRect.width - 10, x));
+        }
     }
-    if (top + menuRect.height > window.innerHeight - 10) {
-        top = window.innerHeight - menuRect.height - 10;
+
+    if (top + menuRect.height > viewportHeight - 10) {
+
+        if (y - menuRect.height > 10) {
+            top = y - menuRect.height;
+        } else {
+
+            top = viewportHeight - menuRect.height - 10;
+        }
     }
 
     left = Math.max(10, left);
